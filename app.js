@@ -19,6 +19,7 @@ app.set('view engine', 'hbs');
 
 const server = http.createServer(app);
 app.set('trust proxy', '127.0.0.1');
+app.set('view engine', 'jade');
 
 app.set('jwtsecret', '&^76ysPNR!');
 
@@ -41,6 +42,8 @@ app.use(function (req, res, next) {
 
 // error handler                                                                                                                 
 app.use(function (err, req, res, next) {
+  console.error(err);
+  
   // set locals, only providing error in development                                                                             
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

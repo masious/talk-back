@@ -2,13 +2,27 @@ const jwt = require('jsonwebtoken');
 const socketIo = require('socket.io');
 const User = require('../models/user');
 const Message = require('../models/message');
-// const socketError = require('../lib/socketError');
 
-const lastId = -1;
+async function updateLastSeen (user) {
+  if ((new Date()).getTime() - user.lastSeen.getTime() > 2000) {
+    user.lastSeen = new Date();
+    await user.save();
+  }
+}
+
+
 function listen (server, app) {
   const io = socketIo(server);
   io._openSockets = {}
-  
+
+  setInterval(function updateLastSeens () {
+    Object.keys(io._openSockets)
+      .map(userId => io._openSockets[userId].user)
+      .forEach(async user => {
+        await updateLastSeen(user)
+      })
+  }, 5000);
+
   let lastSeenTimeout
   io.on('connection', async function connected (socket) {
     const { token } = socket.handshake.query;
@@ -19,17 +33,8 @@ function listen (server, app) {
           _id: data._id
         });
 
-        lastSeenTimeout = setTimeout(async () => {
-          if((new Date()).getTime() - socket.user.lastSeen.getTime() > 2000) {
-            socket.user.lastSeen = new Date();
-            await socket.user.save();
-          }
-        }, 3000);
         socket.user.status = 'online';
-        socket.user.lastSeen = new Date();
-        await socket.user.save();
-
-        
+        await updateLastSeen(socket.user);
 
         io._openSockets[data._id] = socket
       } catch (e) {
@@ -73,7 +78,7 @@ function listen (server, app) {
             contact: msg.receiverId
           }
         })
-        .execPopulate()
+          .execPopulate()
 
         const userConversation = user.conversations[0];
         userConversation.messages.push(message);
@@ -107,7 +112,7 @@ function listen (server, app) {
       socket.emit('marked seen', message._doc);
     });
 
-    socket.on('getLastSeen', async function(userId, cb) {
+    socket.on('getLastSeen', async function (userId, cb) {
       const user = await User.findById(userId);
       cb(user.lastSeen);
     });
