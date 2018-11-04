@@ -27,9 +27,7 @@ function listen (server, app) {
     const { data } = jwt.verify(token, app.get('jwtsecret'));
     if (data) {
       try {
-        socket.user = await User.findOne({
-          _id: data._id
-        });
+        socket.user = await User.findById(data._id);
 
         socket.user.status = 'online';
         await updateLastSeen(socket.user);
@@ -51,7 +49,7 @@ function listen (server, app) {
 
     socket.on('chat message', async function (msg, ack) {
       try {
-        const receiver = await User.findOne({ _id: msg.receiverId })
+        const receiver = await User.findById(msg.receiverId)
           .populate({
             path: 'conversations',
             match: {
@@ -70,15 +68,19 @@ function listen (server, app) {
         receiverConversation.messages.push(message)
         await receiverConversation.save()
 
-        const user = await socket.user.populate({
-          path: 'conversations',
-          match: {
-            contact: msg.receiverId
-          }
-        })
-          .execPopulate()
+        const user = await User.findById(socket.user._id)
+          .populate({
+            path: 'conversations',
+            select: 'contact messages',
+            populate: {
+              path: 'contact',
+              select: '_id'
+            }
+          });
+        
+        const userConversation = user.conversations
+          .find(conv => String(conv.contact._id) === String(receiver._id));
 
-        const userConversation = user.conversations[0];
         userConversation.messages.push(message);
         await userConversation.save()
 

@@ -43,7 +43,7 @@ router.post('/create', async function (req, res, next) {
     const responseData = { ...user._doc, jwt };
     res.status(201).send(responseData);
   } catch (err) {
-    createError(500, err)
+    next(createError(500, err));
   }
 })
 
@@ -95,13 +95,22 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
 
 router.post('/login', loginView);
 
-router.get('/search', async function (req, res, next) {
+router.get('/search', isAuthenticated, async function (req, res, next) {
   const { q: query } = req.query
+
+  const user = await req.user.populate('conversations', 'contact').execPopulate();
+
+  const friendIds = user.conversations
+  .map(conv => conv.contact)
 
   try {
     const users = await User.find({
       username: {
-        $regex: `^${query}`
+        $regex: `^${query}`,
+        $options: 'i'
+      },
+      _id: {
+        $nin: [req.user._id, ...friendIds]
       }
     }).select('_id username')
 
@@ -114,6 +123,17 @@ router.get('/search', async function (req, res, next) {
 router.post('/add-contact', isAuthenticated, async function (req, res, next) {
   const { userId: newUserId } = req.body
   try {
+    if (newUserId === req.user._id) {
+      res.status(403).send({ error: 'You can\'t add yourself!' });
+      return;
+    }
+
+    const contact = await User.findById(newUserId)
+    if (!contact) {
+      res.status(404).send({ error: 'User not found' });
+      return;
+    }
+
     const user = await req.user.populate({
       path: 'conversations',
       match: {
@@ -129,15 +149,12 @@ router.post('/add-contact', isAuthenticated, async function (req, res, next) {
       return;
     }
 
-    const userConversation = new Conversation({
-      contact: newUserId
-    });
+    const userConversation = new Conversation({ contact });
     await userConversation.save();
 
-    user.conversations.push(userConversation);
-    await user.save();
+    req.user.conversations.push(userConversation);
+    await req.user.save();
 
-    const contact = await User.findOne({ _id: newUserId });
     const contactConversation = new Conversation({
       contact: user
     });
@@ -154,6 +171,7 @@ router.post('/add-contact', isAuthenticated, async function (req, res, next) {
       conversationId: userConversation._id
     });
   } catch (e) {
+    console.log(e);
     next(e);
   }
 })
@@ -185,7 +203,7 @@ router.get('/conversation', isAuthenticated, async function (req, res, next) {
       messages: user.conversations[0].messages.reverse()
     })
   } catch (e) {
-    createError(500, e);
+    next(createError(500, e));
   }
 });
 
@@ -203,7 +221,7 @@ router.post('/update', isAuthenticated, async function (req, res, next) {
 
     res.send({ ...req.user._doc, jwt });
   } catch (e) {
-    createError(e)
+    next(createError(e))
   }
 });
 

@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema({
           return done(true)
         }
 
-        this.model('User').count({ username: value }, function (err, count) {
+        this.model('User').countDocuments({ username: value }, function (err, count) {
           if (err) {
             return done(err);
           }
@@ -30,7 +30,7 @@ const UserSchema = new mongoose.Schema({
           return done(true)
         }
 
-        this.model('User').count({ email: value }, function (err, count) {
+        this.model('User').countDocuments({ email: value }, function (err, count) {
           if (err) {
             return done(err);
           }
