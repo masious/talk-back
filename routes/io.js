@@ -10,7 +10,6 @@ async function updateLastSeen (user) {
   }
 }
 
-
 function listen (server, app) {
   const io = socketIo(server);
   io._openSockets = {}
@@ -23,7 +22,6 @@ function listen (server, app) {
       })
   }, 5000);
 
-  let lastSeenTimeout
   io.on('connection', async function connected (socket) {
     const { token } = socket.handshake.query;
     const { data } = jwt.verify(token, app.get('jwtsecret'));
@@ -51,7 +49,7 @@ function listen (server, app) {
       console.log('user disconnected');
     });
 
-    socket.on('chat message', async function (msg) {
+    socket.on('chat message', async function (msg, ack) {
       try {
         const receiver = await User.findOne({ _id: msg.receiverId })
           .populate({
@@ -92,10 +90,7 @@ function listen (server, app) {
           });
         }
 
-        io._openSockets[String(user._id)].emit('new message', {
-          conversationId: userConversation._id,
-          message
-        });
+        ack(message)
       } catch (e) {
         console.error(e)
       }

@@ -21,10 +21,10 @@ function createJwt (user, secret) {
 }
 
 router.post('/create', async function (req, res, next) {
-  const { username,
+  const {
+    username,
     email,
     password,
-    photoUrl,
     welcomeMessage
   } = req.body
 
@@ -32,7 +32,6 @@ router.post('/create', async function (req, res, next) {
     username,
     email,
     password,
-    photoUrl,
     welcomeMessage
   }
 
