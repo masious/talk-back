@@ -13,11 +13,16 @@ function createJwt (user, secret) {
     })
 }
 
-async function loginView(req, res, next) {
+async function loginView (req, res, next) {
   try {
     const user = await User.findOne({
-      username: req.body.username,
-      password: req.body.password
+      $or: [{
+        username: req.body.username,
+        password: req.body.password
+      }, {
+        email: req.body.username,
+        password: req.body.password
+      }]
     });
     const jwt = createJwt(user, req.app.get('jwtsecret'));
 

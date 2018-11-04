@@ -101,8 +101,11 @@ function listen (server, app) {
       message.isSeen = true;
       await message.save();
 
-      io._openSockets[String(message.sender._id)]
-        .emit('marked seen', message._doc);
+      const senderId = String(message.sender._id);
+      if (io._openSockets[senderId]) {
+        io._openSockets[String(senderId)]
+          .emit('marked seen', message._doc);
+      }
 
       socket.emit('marked seen', message._doc);
     });
