@@ -50,10 +50,10 @@ router.post('/create', async function (req, res, next) {
 router.get('/contacts', isAuthenticated, async function (req, res, next) {
   try {
     const user = await req.user
-    .populate({
-      path: 'conversations',
-      populate: [{
-        path: 'contact',
+      .populate({
+        path: 'conversations',
+        populate: [{
+          path: 'contact',
         }, {
           // finding unread messages
           path: 'messages',
@@ -80,14 +80,21 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
       conversation.lastMessage = conv.messages[0];
     }));
 
-    res.send(user.conversations.map(conv => ({
+    const results = user.conversations.map(conv => ({
+      _id: String(conv.contact._id),
       username: conv.contact.username,
-      _id: conv.contact._id,
+      lastSeen: conv.contact.lastSeen,
       unreadCount: conv.messages.length,
       photoUrl: conv.contact.photoUrl && `/images/${conv.contact.photoUrl}`,
-      lastMessage: conv.lastMessage,
+      messages: [conv.lastMessage],
       conversationId: conv._id
-    })));
+    }))
+      .reduce((prev, curr) => {
+        prev[curr._id] = curr;
+        return prev
+      }, {});
+
+    res.send(results);
   } catch (error) {
     next(error);
   }
@@ -101,7 +108,7 @@ router.get('/search', isAuthenticated, async function (req, res, next) {
   const user = await req.user.populate('conversations', 'contact').execPopulate();
 
   const friendIds = user.conversations
-  .map(conv => conv.contact)
+    .map(conv => conv.contact)
 
   try {
     const users = await User.find({
@@ -178,12 +185,16 @@ router.post('/add-contact', isAuthenticated, async function (req, res, next) {
 
 router.get('/conversation', isAuthenticated, async function (req, res, next) {
   try {
+    const contact = await User
+      .findOne({ username: req.query.userId })
+      .select('_id username')
+
     const user = await req.user
       .populate({
         path: 'conversations',
         model: 'Conversation',
         match: {
-          contact: req.query.userId
+          contact
         },
         populate: {
           path: 'messages',
@@ -199,7 +210,7 @@ router.get('/conversation', isAuthenticated, async function (req, res, next) {
       .execPopulate();
 
     res.send({
-      ...user.conversations[0],
+      ...contact._doc,
       messages: user.conversations[0].messages.reverse()
     })
   } catch (e) {

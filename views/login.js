@@ -14,6 +14,7 @@ function createJwt (user, secret) {
 }
 
 async function loginView (req, res, next) {
+  console.log(req.body);
   try {
     const user = await User.findOne({
       $or: [{
