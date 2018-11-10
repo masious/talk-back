@@ -7,8 +7,6 @@ const debug = require('debug')('talk-back:server');
 const http = require('http');
 
 const initIo = require('./routes/io');
-const lib = require('./lib/init');
-// const { renderError } = require('./lib/response');
 
 const usersRouter = require('./routes/users');
 
@@ -19,7 +17,6 @@ app.set('view engine', 'hbs');
 
 const server = http.createServer(app);
 app.set('trust proxy', '127.0.0.1');
-app.set('view engine', 'jade');
 
 app.set('jwtsecret', '&^76ysPNR!');
 
@@ -28,13 +25,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// lib({
-//   app
-// })
-
 app.use('/users', usersRouter);
-
 initIo(server, app);
+app.use(['/', '/chat', '/chat/*'], function(req, res, next) {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 
 app.use(function (req, res, next) {
   next(createError(404));

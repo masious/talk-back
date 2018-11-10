@@ -5,7 +5,6 @@ const createError = require('http-errors');
 const router = express.Router();
 const User = require('../models/user');
 const Message = require('../models/message');
-const { renderError } = require('../lib/response');
 const Conversation = require('../models/conversation');
 const { isAuthenticated } = require('../middlewares/auth');
 const loginView = require('../views/login');
@@ -96,7 +95,7 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
 
     res.send(results);
   } catch (error) {
-    next(error);
+    next(createError(500, error));
   }
 })
 
@@ -119,11 +118,11 @@ router.get('/search', isAuthenticated, async function (req, res, next) {
       _id: {
         $nin: [req.user._id, ...friendIds]
       }
-    }).select('_id username')
+    }).select('_id username welcomeMessage lastSeen')
 
     res.send(JSON.stringify(users))
   } catch (e) {
-    next(e)
+    next(createError(e));
   }
 })
 
@@ -179,7 +178,7 @@ router.post('/add-contact', isAuthenticated, async function (req, res, next) {
     });
   } catch (e) {
     console.log(e);
-    next(e);
+    next(createError(e));
   }
 })
 

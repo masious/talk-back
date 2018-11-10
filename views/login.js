@@ -1,6 +1,6 @@
+const createError = require('http-errors');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const { renderError } = require('../lib/response');
 
 function createJwt (user, secret) {
   return jwt.sign({
@@ -33,7 +33,7 @@ async function loginView (req, res, next) {
       photoUrl: user.photoUrl && `/images/${user.photoUrl}`
     });
   } catch (e) {
-    next(e);
+    next(createError(e));
   }
 };
 
