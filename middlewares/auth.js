@@ -14,7 +14,7 @@ async function isAuthenticated (req, res, next) {
       req.user = await User.findOne({
         _id: data._id
       })
-      next()
+      next();
     } catch (err) {
       next(createError(401, 'No user found'));
     }

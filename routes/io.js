@@ -32,7 +32,7 @@ function listen (server, app) {
         socket.user.status = 'online';
         await updateLastSeen(socket.user);
 
-        io._openSockets[data._id] = socket
+        io._openSockets[data._id] = socket;
       } catch (e) {
         console.error(e)
         return
@@ -84,9 +84,8 @@ function listen (server, app) {
         userConversation.messages.push(message);
         await userConversation.save()
 
-        const receiverId = String(receiver._id);
-        if (io._openSockets[receiverId]) {
-          io._openSockets[receiverId].emit('new message', {
+        if (io._openSockets[msg.receiverId]) {
+          io._openSockets[msg.receiverId].emit('new message', {
             conversationId: receiverConversation._id,
             message
           });

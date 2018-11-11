@@ -65,6 +65,7 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
       .execPopulate();
 
     await Promise.all(user.conversations.map(async conversation => {
+      let messages = [];
       const conv = await Conversation
         .findById(conversation._id)
         .populate({
@@ -76,7 +77,6 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
             }
           }
         });
-      conversation.lastMessage = conv.messages[0];
     }));
 
     const results = user.conversations.map(conv => ({
@@ -85,7 +85,7 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
       lastSeen: conv.contact.lastSeen,
       unreadCount: conv.messages.length,
       photoUrl: conv.contact.photoUrl && `/images/${conv.contact.photoUrl}`,
-      messages: [conv.lastMessage],
+      messages: conv.messages,
       conversationId: conv._id
     }))
       .reduce((prev, curr) => {
