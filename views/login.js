@@ -30,7 +30,7 @@ async function loginView (req, res, next) {
     res.send({
       ...user._doc,
       jwt,
-      photoUrl: user.photoUrl && `/images/${user.photoUrl}`
+      photoUrl: user.photoUrl
     });
   } catch (e) {
     next(createError(e));

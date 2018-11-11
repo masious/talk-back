@@ -84,7 +84,7 @@ router.get('/contacts', isAuthenticated, async function (req, res, next) {
       username: conv.contact.username,
       lastSeen: conv.contact.lastSeen,
       unreadCount: conv.messages.length,
-      photoUrl: conv.contact.photoUrl && `/images/${conv.contact.photoUrl}`,
+      photoUrl: conv.contact.photoUrl,
       messages: conv.messages,
       conversationId: conv._id
     }))
@@ -172,7 +172,7 @@ router.post('/add-contact', isAuthenticated, async function (req, res, next) {
       username: contact.username,
       _id: contact._id,
       unreadCount: 0,
-      photoUrl: contact.photoUrl && `/images/${contact.photoUrl}`,
+      photoUrl: contact.photoUrl,
       lastMessage: {},
       conversationId: userConversation._id
     });
@@ -186,7 +186,7 @@ router.get('/conversation', isAuthenticated, async function (req, res, next) {
   try {
     const contact = await User
       .findOne({ username: req.query.userId })
-      .select('_id username')
+      .select('_id username lastSeen photoUrl')
 
     const user = await req.user
       .populate({
@@ -246,15 +246,15 @@ const uploadStorage = multer.diskStorage({
 })
 const upload = multer({
   storage: uploadStorage
-})
+});
 router.post('/avatar',
   [isAuthenticated, upload.single('avatar')],
   async function (req, res, next) {
-    req.user.photoUrl = req.file.filename;
+    req.user.photoUrl = `/images/${req.file.filename}`;
     await req.user.save()
 
     res.send({
-      photoUrl: `/images/${req.user.photoUrl}`
+      photoUrl: req.user.photoUrl
     })
   }
 );

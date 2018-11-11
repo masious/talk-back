@@ -3,18 +3,18 @@ const socketIo = require('socket.io');
 const User = require('../models/user');
 const Message = require('../models/message');
 
-async function updateLastSeen (user) {
+async function updateLastSeen(user) {
   if ((new Date()).getTime() - user.lastSeen.getTime() > 2000) {
     user.lastSeen = new Date();
     await user.save();
   }
 }
 
-function listen (server, app) {
+function listen(server, app) {
   const io = socketIo(server);
   io._openSockets = {}
 
-  setInterval(function updateLastSeens () {
+  setInterval(function updateLastSeens() {
     Object.keys(io._openSockets)
       .map(userId => io._openSockets[userId].user)
       .forEach(async user => {
@@ -22,7 +22,7 @@ function listen (server, app) {
       })
   }, 5000);
 
-  io.on('connection', async function connected (socket) {
+  io.on('connection', async function connected(socket) {
     const { token } = socket.handshake.query;
     const { data } = jwt.verify(token, app.get('jwtsecret'));
     if (data) {
@@ -39,7 +39,7 @@ function listen (server, app) {
       }
     }
 
-    socket.on('disconnect', async function disconnected () {
+    socket.on('disconnect', async function disconnected() {
       delete io._openSockets[String(socket.user._id)]
       socket.user.status = 'offline'
       await socket.user.save()
@@ -77,7 +77,7 @@ function listen (server, app) {
               select: '_id'
             }
           });
-        
+
         const userConversation = user.conversations
           .find(conv => String(conv.contact._id) === String(receiver._id));
 
@@ -111,8 +111,8 @@ function listen (server, app) {
       socket.emit('marked seen', message._doc);
     });
 
-    socket.on('getLastSeen', async function (userId, cb) {
-      const user = await User.findById(userId);
+    socket.on('getLastSeen', async function (username, cb) {
+      const user = await User.findOne({ username });
       cb(user.lastSeen);
     });
   });
